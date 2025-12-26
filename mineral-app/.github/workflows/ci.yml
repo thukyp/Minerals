@@ -1,0 +1,45 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: mineral-app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./mineral-app
+        run: npm ci
+
+      - name: Run linter
+        working-directory: ./mineral-app
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Build project
+        working-directory: ./mineral-app
+        run: npm run build
+        env:
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+
+      - name: Check for build errors
+        if: failure()
+        run: |
+          echo "Build failed! Please check the errors above."
+          exit 1
+
