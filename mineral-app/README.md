@@ -1,36 +1,136 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Trợ lý AI Định giá Khoáng vật
 
-## Getting Started
+Ứng dụng web giúp quản lý và định giá khoáng vật thông minh sử dụng AI.
 
-First, run the development server:
+## Tính năng
+
+- 📦 **Quản lý lô hàng**: Thêm và quản lý các lô khoáng vật với thông tin chi tiết
+- 🖼️ **Tìm kiếm bằng hình ảnh**: Sử dụng AI để tìm kiếm khoáng vật từ ảnh chụp
+- 💰 **Định giá thông minh**: AI đề xuất giá bán dựa trên lịch sử và xu hướng thị trường
+- 📊 **Học từ dữ liệu**: Hệ thống tự động cải thiện đề xuất giá qua thời gian
+
+## Công nghệ
+
+- **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS
+- **Backend**: Next.js API Routes (Serverless)
+- **Database**: PostgreSQL với pgvector (vector similarity search)
+- **Storage**: Vercel Blob Storage
+- **AI**: @xenova/transformers (CLIP model cho image embeddings)
+
+## Cài đặt
+
+### Yêu cầu
+
+- Node.js 20+
+- PostgreSQL 16+ với pgvector extension
+- Vercel account (cho Blob Storage)
+
+### Bước 1: Clone repository
+
+```bash
+git clone https://github.com/thukyp/Minerals.git
+cd Minerals/mineral-app
+```
+
+### Bước 2: Cài đặt dependencies
+
+```bash
+npm install
+```
+
+### Bước 3: Cấu hình Database
+
+1. Tạo database PostgreSQL:
+```sql
+CREATE DATABASE minerals;
+```
+
+2. Chạy schema:
+```sql
+\i schema.sql
+```
+
+3. Cấu hình connection string trong `.env.local`:
+```env
+POSTGRES_URL=postgresql://user:password@localhost:5432/minerals
+```
+
+### Bước 4: Cấu hình Vercel Blob
+
+1. Tạo Blob Store trên [Vercel Dashboard](https://vercel.com/dashboard)
+2. Lấy Read/Write Token
+3. Thêm vào `.env.local`:
+```env
+BLOB_READ_WRITE_TOKEN=vercel_blob_rw_xxxxxxxxxxxxx
+```
+
+Xem chi tiết trong [SETUP_BLOB.md](./SETUP_BLOB.md)
+
+### Bước 5: Chạy ứng dụng
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Mở [http://localhost:3000](http://localhost:3000) trong trình duyệt.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Git Workflow
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Dự án sử dụng Git Flow. Xem chi tiết trong [GIT_WORKFLOW.md](./GIT_WORKFLOW.md)
 
-## Learn More
+### Các nhánh chính:
+- `main` - Production
+- `develop` - Development
 
-To learn more about Next.js, take a look at the following resources:
+### Tạo tính năng mới:
+```bash
+git checkout develop
+git pull origin develop
+git checkout -b feature/ten-tinh-nang
+# ... làm việc ...
+git push -u origin feature/ten-tinh-nang
+# Tạo Pull Request trên GitHub
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Cấu trúc Dự án
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+mineral-app/
+├── src/
+│   ├── app/              # Next.js App Router
+│   │   ├── api/          # API Routes
+│   │   ├── batches/      # Trang quản lý lô hàng
+│   │   └── search/       # Trang tìm kiếm
+│   ├── lib/              # Utilities
+│   │   ├── db.ts         # Database connection
+│   │   └── ai.ts         # AI embeddings
+│   └── types/            # TypeScript definitions
+├── public/               # Static files
+├── .github/              # GitHub workflows & templates
+└── schema.sql            # Database schema
+```
 
-## Deploy on Vercel
+## API Endpoints
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `POST /api/batches` - Tạo lô hàng mới
+- `POST /api/images` - Lưu ảnh và tạo embedding
+- `POST /api/upload` - Upload ảnh lên Vercel Blob
+- `POST /api/search` - Tìm kiếm bằng hình ảnh
+- `GET /api/pricing` - Lấy giá đề xuất
+- `POST /api/sales-history` - Ghi nhận giao dịch
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Đóng góp
+
+1. Fork repository
+2. Tạo feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'feat: Add some AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Mở Pull Request
+
+## License
+
+MIT
+
+## Tác giả
+
+thukyp
