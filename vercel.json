@@ -1,0 +1,9 @@
+{
+  "buildCommand": "cd mineral-app && npm run build",
+  "outputDirectory": "mineral-app/.next",
+  "installCommand": "cd mineral-app && npm install",
+  "framework": "nextjs",
+  "rootDirectory": "mineral-app"
+}
+
+

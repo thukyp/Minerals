@@ -1,5 +1,7 @@
 import { put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
+import { promises as fs } from 'fs';
+import path from 'path';
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
@@ -26,25 +28,40 @@ export async function POST(request: Request): Promise<NextResponse> {
       );
     }
 
-    // Kiểm tra xem có token Vercel Blob không (cần thiết cho production)
-    // Trong development, có thể cần cấu hình token trong .env.local
-    const token = process.env.BLOB_READ_WRITE_TOKEN;
-    
-    const uploadOptions: {
-      access: 'public';
-      token?: string;
-    } = {
-      access: 'public',
-    };
+    if (process.env.NODE_ENV === 'development') {
+      // Trong development, lưu file vào thư mục local
+      const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+      await fs.mkdir(uploadsDir, { recursive: true });
+      const filePath = path.join(uploadsDir, filename);
+      const arrayBuffer = await blob.arrayBuffer();
+      await fs.writeFile(filePath, Buffer.from(arrayBuffer));
+      
+      return NextResponse.json({
+        url: `/uploads/${filename}`,
+        pathname: `/uploads/${filename}`,
+        contentType: blob.type,
+        size: blob.size,
+      });
+    } else {
+      // Trong production, upload lên Vercel Blob
+      const token = process.env.BLOB_READ_WRITE_TOKEN;
+      
+      const uploadOptions: {
+        access: 'public';
+        token?: string;
+      } = {
+        access: 'public',
+      };
 
-    if (token) {
-      uploadOptions.token = token;
+      if (token) {
+        uploadOptions.token = token;
+      }
+      
+      // Upload lên Vercel Blob
+      const result = await put(filename, blob, uploadOptions);
+
+      return NextResponse.json(result);
     }
-    
-    // Upload lên Vercel Blob
-    const result = await put(filename, blob, uploadOptions);
-
-    return NextResponse.json(result);
   } catch (error) {
     console.error('Upload error:', error);
     

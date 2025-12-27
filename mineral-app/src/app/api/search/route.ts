@@ -3,25 +3,28 @@ import { getEmbedding } from '@/lib/ai';
 import { NextResponse } from 'next/server';
 import { put } from '@vercel/blob';
 import pgvector from 'pgvector/pg';
+import { promises as fs } from 'fs';
+import path from 'path';
 
 export async function POST(request: Request) {
     try {
-        // --- Bước 1: Upload ảnh tra cứu lên Vercel Blob (tạm thời) ---
+        // --- Bước 1: Lấy ảnh tra cứu ---
         // Lấy file ảnh từ request body
         if (!request.body) {
             return new NextResponse('Missing request body', { status: 400 });
         }
         
         const file = await request.blob();
-        const filename = `search-temp-${Date.now()}`;
-        
-        const blob = await put(filename, file, {
-            access: 'public',
-            addRandomSuffix: false, // Không cần suffix ngẫu nhiên vì sẽ xóa ngay
-        });
+        const filename = `search-temp-${Date.now()}.jpg`;
+        const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+        await fs.mkdir(uploadsDir, { recursive: true });
+        const filePath = path.join(uploadsDir, filename);
+        const arrayBuffer = await file.arrayBuffer();
+        await fs.writeFile(filePath, Buffer.from(arrayBuffer));
+        const imageUrl = `/uploads/${filename}`;
 
-        // --- Bước 2: Tạo embedding cho ảnh vừa upload ---
-        const embedding = await getEmbedding(blob.url);
+        // --- Bước 2: Tạo embedding cho ảnh ---
+        const embedding = await getEmbedding(imageUrl);
         const embeddingSql = pgvector.toSql(embedding);
         
         // --- Bước 3: Truy vấn CSDL để tìm các vector gần nhất ---
@@ -30,26 +33,24 @@ export async function POST(request: Request) {
         // Khoảng cách càng nhỏ, ảnh càng giống nhau.
         const searchResult = await db.query(
             `SELECT 
-                images.id as image_id,
-                images.image_path,
-                batches.id as batch_id,
-                batches.stone_type,
-                batches.import_date,
-                batches.import_price,
-                batches.quantity,
-                batches.notes,
-                images.embedding <=> $1 AS distance
-            FROM images
-            JOIN batches ON images.batch_id = batches.id
-            WHERE images.embedding IS NOT NULL
+                s.id as stone_id,
+                s.image_path,
+                s.quality_score,
+                s.user_selected_price,
+                b.id as batch_id,
+                b.stone_type,
+                b.import_date,
+                s.embedding <=> $1 AS distance
+            FROM stones s
+            JOIN batches b ON s.batch_id = b.id
+            WHERE s.embedding IS NOT NULL
             ORDER BY distance ASC
-            LIMIT 5`,
+            LIMIT 10`,
             [embeddingSql]
         );
 
-        // --- (Tùy chọn) Bước 4: Xóa ảnh tạm khỏi Vercel Blob ---
-        // Vì không có SDK để xóa, bước này tạm thời bỏ qua, 
-        // nhưng trong ứng dụng thực tế cần cơ chế dọn dẹp.
+        // --- Bước 4: Xóa file tạm ---
+        await fs.unlink(filePath).catch(() => {});
 
         return NextResponse.json(searchResult.rows);
 

@@ -3,3 +3,4 @@ declare module 'pgvector/pg' {
   export function toSql(vector: number[]): string;
 }
 
+

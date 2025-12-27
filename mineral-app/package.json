@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "type-check": "tsc --noEmit",
+    "check-all": "node check-types.js",
+    "setup": "node run-migration.js",
+    "test-apis": "node test-apis.js"
   },
   "dependencies": {
     "@vercel/blob": "^2.0.0",
